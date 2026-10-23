@@ -4,6 +4,7 @@ import {
   checkEntityInAffiliatedSet,
   isQlooConfigured,
   searchEntity,
+  suggestAffiliatedEntity,
   type QlooFetchReason,
 } from "./qloo/client";
 import type { Plan, PlanLine, SheetStatus } from "../app/plans";
@@ -11,11 +12,21 @@ import type { LineVerdict, PlanEvaluation, TraceStep } from "./send-hold-types";
 
 export type { LineVerdict, PlanEvaluation, TraceStep } from "./send-hold-types";
 
-const ROLE_ENTITY_TYPE: Record<PlanLine["role"], string> = {
+export const ROLE_ENTITY_TYPE: Record<PlanLine["role"], string> = {
   Support: "urn:entity:artist",
   Dinner: "urn:entity:place",
   Drink: "urn:entity:brand",
 };
+
+export function entityKindForType(entityType: string): "artist" | "place" | "brand" {
+  if (entityType === "urn:entity:artist") {
+    return "artist";
+  }
+  if (entityType === "urn:entity:place") {
+    return "place";
+  }
+  return "brand";
+}
 
 function traceNoAnswer(traceId: string, kind: string, reason?: QlooFetchReason): TraceStep {
   const suffix = reason ? ` · ${reason}` : "";
@@ -66,7 +77,6 @@ function fixtureEvaluation(plan: Plan): PlanEvaluation {
     name: line.name,
     inSet: status === "cleared" ? true : !line.held,
     held: line.held,
-    replacement: line.replacement,
   }));
 
   return {
@@ -87,7 +97,6 @@ function silentEvaluation(plan: Plan, trace: TraceStep[]): PlanEvaluation {
       name: line.name,
       inSet: false,
       held: line.held,
-      replacement: line.replacement,
     })),
     source: "qloo",
   };
@@ -102,31 +111,34 @@ export async function evaluatePlan(plan: Plan): Promise<PlanEvaluation> {
 
   const headlinerSearch = await searchEntity(plan.headliner, "urn:entity:artist");
   if (!headlinerSearch.ok) {
-    trace.push(traceNoAnswer("headliner", "artist", headlinerSearch.reason));
+    const suffix = ` · ${headlinerSearch.reason}`;
+    trace.push({
+      id: "headliner",
+      label: `search · artist · no answer${suffix}`,
+      reason: headlinerSearch.reason,
+    });
     return silentEvaluation(plan, trace);
   }
 
   const headliner = headlinerSearch.data.results?.[0];
   if (!headliner?.entity_id) {
-    trace.push(traceNoAnswer("headliner", "artist", "not_found"));
+    trace.push({
+      id: "headliner",
+      label: "search · artist · no answer · not_found",
+      reason: "not_found",
+    });
     return silentEvaluation(plan, trace);
   }
 
-  trace.push({ id: "headliner", label: "insights · artist · in set" });
+  trace.push({ id: "headliner", label: "search · artist · resolved" });
 
   const lineResults: LineVerdict[] = [];
   let heldRole: PlanLine["role"] | undefined;
 
   for (const line of plan.lines) {
-    const entityType = line.searchEntityType ?? ROLE_ENTITY_TYPE[line.role];
+    const entityType = ROLE_ENTITY_TYPE[line.role];
     const search = await searchEntity(line.name, entityType);
-
-    const kind =
-      entityType === "urn:entity:artist"
-        ? "artist"
-        : entityType === "urn:entity:place"
-          ? "place"
-          : "brand";
+    const kind = entityKindForType(entityType);
 
     if (!search.ok) {
       trace.push(traceNoAnswer(line.role.toLowerCase(), kind, search.reason));
@@ -156,8 +168,23 @@ export async function evaluatePlan(plan: Plan): Promise<PlanEvaluation> {
       label: `insights · ${kind} · ${inSet ? "in set" : "not in set"}`,
     });
 
-    if (!inSet && !heldRole) {
-      heldRole = line.role;
+    let replacement: string | undefined;
+    if (!inSet) {
+      if (!heldRole) {
+        heldRole = line.role;
+      }
+      const suggest = await suggestAffiliatedEntity(
+        headliner.entity_id,
+        entityType,
+        entity.entity_id,
+      );
+      if (suggest.ok) {
+        replacement = suggest.data.name;
+        trace.push({
+          id: `${line.role.toLowerCase()}-alt`,
+          label: `insights · ${kind} · alt · ${replacement}`,
+        });
+      }
     }
 
     lineResults.push({
@@ -165,7 +192,7 @@ export async function evaluatePlan(plan: Plan): Promise<PlanEvaluation> {
       name: line.name,
       inSet,
       held: !inSet,
-      replacement: line.replacement,
+      replacement,
     });
   }
 

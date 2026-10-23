@@ -36,7 +36,7 @@ export function Sheet({ qlooLive }: SheetProps) {
     loadEvaluation();
   }, [loadEvaluation]);
 
-  const status: SheetStatus = evaluation?.status ?? "held";
+  const status: SheetStatus | null = evaluation?.status ?? null;
   const sendAllowed = evaluation?.status === "cleared";
 
   const fixtureBanner = pending
@@ -73,12 +73,13 @@ export function Sheet({ qlooLive }: SheetProps) {
     plan.lines.map((line) => ({
       role: line.role,
       name: line.name,
-      inSet: !line.held,
-      held: line.held,
-      replacement: line.replacement,
+      inSet: true,
+      held: false,
     }));
 
-  const trace: TraceStep[] = evaluation?.trace ?? defaultTrace(plan, status);
+  const trace: TraceStep[] = evaluation?.trace ?? [
+    { id: "search", label: `search · ${plan.headliner}` },
+  ];
 
   return (
     <div className={styles.page}>
@@ -105,7 +106,7 @@ export function Sheet({ qlooLive }: SheetProps) {
 
       <article
         className={`${styles.briefing} ${pending ? styles.briefingPending : ""}`}
-        key={`${plan.id}-${status}-${evaluation?.source}`}
+        key={plan.id}
       >
         <StatusBanner status={status} />
 
@@ -121,7 +122,12 @@ export function Sheet({ qlooLive }: SheetProps) {
         <Register plan={plan} lines={displayLines} status={status} />
 
         {status === "silent" ? (
-          <p className={styles.outcome}>Qloo did not answer. Nothing was sent.</p>
+          <>
+            <p className={styles.outcome}>Qloo did not answer. Nothing was sent.</p>
+            {plan.negativeControlNote ? (
+              <p className={styles.negativeControl}>{plan.negativeControlNote}</p>
+            ) : null}
+          </>
         ) : status === "held" ? (
           <p className={styles.outcome}>
             This line does not send. It was the confident one, and it is not in the
@@ -148,13 +154,15 @@ export function Sheet({ qlooLive }: SheetProps) {
   );
 }
 
-function StatusBanner({ status }: { status: SheetStatus }) {
+function StatusBanner({ status }: { status: SheetStatus | null }) {
   const copy =
-    status === "held"
-      ? "This plan is held."
-      : status === "silent"
-        ? "Qloo did not answer."
-        : "This plan is cleared to send.";
+    status === null
+      ? "Evaluating this plan."
+      : status === "held"
+        ? "This plan is held."
+        : status === "silent"
+          ? "Qloo did not answer."
+          : "This plan is cleared to send.";
 
   return (
     <p
@@ -167,30 +175,11 @@ function StatusBanner({ status }: { status: SheetStatus }) {
   );
 }
 
-function bannerClass(s: SheetStatus): string {
+function bannerClass(s: SheetStatus | null): string {
+  if (s === null) return styles.bannerSilent;
   if (s === "held") return styles.bannerHeld;
   if (s === "silent") return styles.bannerSilent;
   return styles.bannerCleared;
-}
-
-function defaultTrace(plan: Plan, sheetStatus: SheetStatus): TraceStep[] {
-  if (plan.silent || sheetStatus === "silent") {
-    return [
-      { id: "search", label: `search · ${plan.headliner}` },
-      { id: "artist", label: "insights · artist · no answer" },
-      { id: "place", label: "insights · place · no answer" },
-      { id: "brand", label: "insights · brand · no answer" },
-    ];
-  }
-  const held = plan.lines.find((line) => line.held);
-  const placeHeld = sheetStatus === "held" && held?.role === "Dinner";
-  const brandHeld = sheetStatus === "held" && held?.role === "Drink";
-  return [
-    { id: "search", label: `search · ${plan.headliner}` },
-    { id: "artist", label: "insights · artist · in set" },
-    { id: "place", label: `insights · place · ${placeHeld ? "not in set" : "in set"}` },
-    { id: "brand", label: `insights · brand · ${brandHeld ? "not in set" : "in set"}` },
-  ];
 }
 
 function Register({
@@ -200,10 +189,11 @@ function Register({
 }: {
   plan: Plan;
   lines: LineVerdict[];
-  status: SheetStatus;
+  status: SheetStatus | null;
 }) {
   const silent = status === "silent";
   const cleared = status === "cleared";
+  const pendingEval = status === null;
 
   return (
     <div className={styles.register}>
@@ -231,7 +221,7 @@ function Register({
 
       <section className={styles.panel} aria-labelledby="result-heading">
         <h2 id="result-heading" className={styles.panelTitle}>
-          {cleared ? "Cleared to send" : "After the hold"}
+          {pendingEval ? "Waiting on Qloo" : cleared ? "Cleared to send" : "After the hold"}
         </h2>
         <table className={styles.table}>
           <thead>
@@ -243,7 +233,7 @@ function Register({
           </thead>
           <tbody>
             {lines.map((line) => {
-              const held = !line.inSet && !silent;
+              const held = !pendingEval && !line.inSet && !silent;
               return (
                 <tr key={line.role} className={held ? styles.rowHeld : undefined}>
                   <th scope="row">{line.role}</th>
@@ -261,7 +251,9 @@ function Register({
                       line.name
                     )}
                   </td>
-                  <td>{silent ? "No answer" : line.inSet ? "In set" : "Held"}</td>
+                  <td>
+                    {pendingEval ? "Evaluating" : silent ? "No answer" : line.inSet ? "In set" : "Held"}
+                  </td>
                 </tr>
               );
             })}
@@ -280,7 +272,7 @@ function Control({
   sendMessage,
 }: {
   sendAllowed: boolean;
-  status: SheetStatus;
+  status: SheetStatus | null;
   pending: boolean;
   onSend: () => void;
   sendMessage: string | null;
@@ -291,13 +283,9 @@ function Control({
         <button type="button" className={styles.send} onClick={onSend} disabled={pending}>
           Send plan
         </button>
-      ) : status === "silent" ? (
-        <button type="button" className={styles.blocked} disabled aria-disabled="true">
-          Cannot send
-        </button>
       ) : (
         <button type="button" className={styles.blocked} disabled aria-disabled="true">
-          Cannot send
+          {status === null ? "Evaluating" : "Cannot send"}
         </button>
       )}
       {sendMessage ? (

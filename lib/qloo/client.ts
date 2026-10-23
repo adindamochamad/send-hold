@@ -105,3 +105,38 @@ export async function checkEntityInAffiliatedSet(
 
   return { ok: true, data: { inSet } };
 }
+
+/** First affiliated entity of `targetType` for `headlinerId`, excluding `excludeId`. */
+export async function suggestAffiliatedEntity(
+  headlinerId: string,
+  targetType: string,
+  excludeId: string,
+): Promise<FetchResult<{ entity_id: string; name: string }>> {
+  const result = await qlooFetch<QlooInsightsResponse>("/v2/insights/", {
+    "filter.type": targetType,
+    "signal.interests.entities": headlinerId,
+    take: "25",
+  });
+
+  if (!result.ok) {
+    return result;
+  }
+
+  const entities = result.data.results?.entities ?? [];
+  for (const entity of entities) {
+    if (entity.entity_id === excludeId) {
+      continue;
+    }
+    const affinity = entity.query?.affinity ?? entity.affinity;
+    if (affinity !== undefined && affinity <= 0) {
+      continue;
+    }
+    const name = entity.name?.trim();
+    if (!name) {
+      continue;
+    }
+    return { ok: true, data: { entity_id: entity.entity_id, name } };
+  }
+
+  return { ok: false, reason: "not_found" };
+}

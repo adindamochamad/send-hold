@@ -1,10 +1,8 @@
 export type PlanLine = {
   role: "Support" | "Dinner" | "Drink";
   name: string;
+  /** Fixture only: marks which line is held when QLOO_API_KEY is unset. */
   held?: boolean;
-  replacement?: string;
-  /** Override Qloo entity type for search/insights (demo folios only). */
-  searchEntityType?: string;
 };
 
 export type Plan = {
@@ -16,6 +14,8 @@ export type Plan = {
   lines: PlanLine[];
   /** Fixture only: Qloo does not answer for this folio. */
   silent?: boolean;
+  /** Shown when live evaluation is silent (negative-control folio). */
+  negativeControlNote?: string;
 };
 
 export const plans: Plan[] = [
@@ -27,12 +27,7 @@ export const plans: Plan[] = [
     headliner: "Taylor Swift",
     lines: [
       { role: "Support", name: "Carly Rae Jepsen" },
-      {
-        role: "Dinner",
-        name: "Joe Pizza",
-        held: true,
-        replacement: "Orchard Stair",
-      },
+      { role: "Dinner", name: "Joe Pizza", held: true },
       { role: "Drink", name: "Keds" },
     ],
   },
@@ -45,13 +40,7 @@ export const plans: Plan[] = [
     lines: [
       { role: "Support", name: "Demi Lovato" },
       { role: "Dinner", name: "Park Güell" },
-      {
-        role: "Drink",
-        name: "Joe Pizza",
-        held: true,
-        replacement: "House Verrine",
-        searchEntityType: "urn:entity:place",
-      },
+      { role: "Drink", name: "Mammee Noodle Snack", held: true },
     ],
   },
   {
@@ -61,6 +50,8 @@ export const plans: Plan[] = [
     city: "Los Angeles",
     headliner: "zzznomatch999xyz",
     silent: true,
+    negativeControlNote:
+      "Negative control: this headliner string does not resolve in Qloo search, so the plan stays silent and nothing sends.",
     lines: [
       { role: "Support", name: "Gold Window" },
       { role: "Dinner", name: "Patio Twelve" },

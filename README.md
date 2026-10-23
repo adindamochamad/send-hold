@@ -33,9 +33,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 With `QLOO_API_KEY` set, the masthead shows **Live Qloo evaluation.** Click each folio in order:
 
-1. **North Wharf** — dinner **Joe Pizza** not in Taylor Swift’s set → **Held**, Cannot send.
-2. **Canal Room** — drink line resolves via Qloo as a place not in Beyoncé’s set → **Held**, Cannot send.
-3. **Late Set** — headliner does not resolve → **No answer**, Cannot send.
+1. **North Wharf** — dinner **Joe Pizza** (place) not in Taylor Swift’s set → **Held**, Cannot send. If Qloo returns an in-set alternative, it appears under the held line.
+2. **Canal Room** — drink **Mammee Noodle Snack** (brand) not in Beyoncé’s set → **Held**, Cannot send.
+3. **Late Set** — **negative control**: headliner `zzznomatch999xyz` does not resolve in Qloo → **No answer**, Cannot send.
 4. **Open Door** — all lines in set → **Cleared** → **Send plan** → entry appears in **Send log**.
 
 Without a key, the same folios use **fixture** rules (`silent` flag on Late Set); the banner says local fixture.
@@ -53,6 +53,7 @@ Without a key, the same folios use **fixture** rules (`silent` flag on Late Set)
 - `npm run dev` — development server
 - `npm run build` — production build
 - `npm run lint` — ESLint
+- `npm test` — Vitest (mocked Qloo; no live API key required)
 
 ## Deploy (Vercel)
 

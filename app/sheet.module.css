@@ -310,6 +310,15 @@
   animation: fadeUp var(--motion-base) var(--motion-ease) 140ms both;
 }
 
+.negativeControl {
+  padding: 0 1rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  max-width: 42ch;
+}
+
 .actionsRow {
   display: grid;
   grid-template-columns: 1fr auto;
