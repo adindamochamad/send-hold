@@ -56,4 +56,6 @@ Without a key, the same folios use **fixture** rules (`silent` flag on Late Set)
 
 ## Deploy (Vercel)
 
+**Live demo:** [https://send-hold.vercel.app](https://send-hold.vercel.app)
+
 Set `QLOO_API_KEY` and `QLOO_API_BASE_URL=https://hackathon.api.qloo.com` in the Vercel project environment. Do not commit `.env.local`.
