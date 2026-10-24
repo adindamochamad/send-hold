@@ -75,7 +75,12 @@ Health check: `GET /api/health` → `{ next, convex, qlooConfigured }`.
 
 **Live demo:** [https://send-hold.vercel.app](https://send-hold.vercel.app)
 
-Set `QLOO_API_KEY` and `QLOO_API_BASE_URL=https://hackathon.api.qloo.com` in the Vercel project environment. For `/app`, also set `NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` (from `npx convex dev` / dashboard). Do not commit `.env.local`.
+Set `QLOO_API_KEY` and `QLOO_API_BASE_URL=https://hackathon.api.qloo.com` in the Vercel project environment. For `/app`, set Convex **production** URLs (after `npx convex deploy --yes`):
+
+- `NEXT_PUBLIC_CONVEX_URL=https://impartial-elk-202.convex.cloud`
+- `NEXT_PUBLIC_CONVEX_SITE_URL=https://impartial-elk-202.convex.site`
+
+Set `QLOO_*`, `RESEND_API_KEY`, and `SEND_HOLD_FROM_EMAIL` on the Convex production deployment (`npx convex env set --prod`). Do not commit `.env.local`.
 
 ## Hackathon submit
 
