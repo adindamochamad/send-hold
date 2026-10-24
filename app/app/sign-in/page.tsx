@@ -22,8 +22,22 @@ export default function SignInPage() {
     try {
       await signIn("password", { email, password, flow: mode });
       router.push("/app");
-    } catch {
-      setError("Could not sign in. Check email and password.");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : "Authentication failed.";
+      const hint =
+        message.includes("JWT_PRIVATE_KEY") || message.includes("JWKS")
+          ? " Convex Auth keys missing on this deployment — set JWT_PRIVATE_KEY and JWKS (see README)."
+          : "";
+      setError(
+        mode === "signUp"
+          ? `Could not create account. ${message}${hint}`
+          : `Could not sign in. ${message}${hint}`,
+      );
     } finally {
       setPending(false);
     }

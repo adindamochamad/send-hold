@@ -49,7 +49,16 @@ The hackathon demo stays at **`/`** (four hardcoded folios). Product v1 is at **
 3. Create a folio, pick entities via Qloo search, **Evaluate**, then **Send** when cleared.
 4. Evaluations and sends are stored in Convex; cleared sends email via **Resend** when configured.
 
-Set on the **Convex** deployment (`npx convex env set`): `QLOO_API_KEY`, `QLOO_API_BASE_URL`, `RESEND_API_KEY`, `SEND_HOLD_FROM_EMAIL`.
+Set on the **Convex** deployment (`npx convex env set` for dev, `--prod` for production):
+
+| Variable | Purpose |
+|----------|---------|
+| `QLOO_API_KEY`, `QLOO_API_BASE_URL` | Live evaluate from Convex actions |
+| `JWT_PRIVATE_KEY`, `JWKS` | Convex Auth (password sign-up). Generate: `npx @convex-dev/auth` |
+| `SITE_URL` | App origin for auth (e.g. `http://localhost:3000` dev, `https://send-hold.vercel.app` prod) |
+| `RESEND_API_KEY`, `SEND_HOLD_FROM_EMAIL` | Optional email when a cleared plan sends |
+
+Do not commit secret values. Names only in [`.env.example`](.env.example) for Next.js public Convex URLs.
 
 Health check: `GET /api/health` → `{ next, convex, qlooConfigured }`.
 
@@ -86,6 +95,6 @@ Set `QLOO_*`, `RESEND_API_KEY`, and `SEND_HOLD_FROM_EMAIL` on the Convex product
 
 Copy-paste text for Devpost: [DEVPOST.md](DEVPOST.md). Open-source license: [LICENSE](LICENSE) (MIT).
 
-## Agentic story (short)
+## Qloo story (short)
 
-Send Hold behaves as a **Qloo-powered gate agent**: search entities, check affiliated sets, refuse send on held/silent, re-check on send, and surface ranked in-set alternatives—without Qloo there is no hold decision.
+Send Hold is a **Qloo-gated send pipeline**: search entities, check affiliated sets, refuse send on held/silent, re-check on send, and surface ranked in-set alternatives. Without Qloo there is no hold decision. It is not an LLM agent; see [DEVPOST.md](DEVPOST.md) for hackathon copy.
