@@ -40,13 +40,28 @@ With `QLOO_API_KEY` set, the masthead shows **Live Qloo evaluation.** Click each
 
 Without a key, the same folios use **fixture** rules (`silent` flag on Late Set); the banner says local fixture.
 
+## Track B — Product (`/app`)
+
+The hackathon demo stays at **`/`** (four hardcoded folios). Product v1 is at **`/app`**:
+
+1. Run `npx convex dev` once (writes `NEXT_PUBLIC_CONVEX_URL` to `.env.local`).
+2. Sign up / sign in at [http://localhost:3000/app/sign-in](http://localhost:3000/app/sign-in).
+3. Create a folio, pick entities via Qloo search, **Evaluate**, then **Send** when cleared.
+4. Evaluations and sends are stored in Convex; cleared sends email via **Resend** when configured.
+
+Set on the **Convex** deployment (`npx convex env set`): `QLOO_API_KEY`, `QLOO_API_BASE_URL`, `RESEND_API_KEY`, `SEND_HOLD_FROM_EMAIL`.
+
+Health check: `GET /api/health` → `{ next, convex, qlooConfigured }`.
+
 ## Project layout
 
 - `app/plans.ts` — demo folios and types
-- `app/sheet.tsx` — sheet UI + send log
-- `lib/qloo/` — server-only Qloo client
-- `lib/plan-evaluation.ts` — evaluate hold / silent / cleared
-- `app/actions/send-hold.ts` — server actions for evaluate and send
+- `app/sheet.tsx` — demo sheet UI + send log
+- `app/app/` — Track B (Convex Auth, CRUD, picker, history)
+- `convex/` — schema, plans, folio actions, cache, rate limits
+- `lib/qloo/` — Qloo core + server-only Next client
+- `lib/plan-evaluation-core.ts` — shared evaluate (demo + Convex)
+- `app/actions/send-hold.ts` — demo server actions
 
 ## Scripts
 
@@ -54,9 +69,18 @@ Without a key, the same folios use **fixture** rules (`silent` flag on Late Set)
 - `npm run build` — production build
 - `npm run lint` — ESLint
 - `npm test` — Vitest (mocked Qloo; no live API key required)
+- `npm run convex:dev` — Convex dev deployment + codegen
 
 ## Deploy (Vercel)
 
 **Live demo:** [https://send-hold.vercel.app](https://send-hold.vercel.app)
 
-Set `QLOO_API_KEY` and `QLOO_API_BASE_URL=https://hackathon.api.qloo.com` in the Vercel project environment. Do not commit `.env.local`.
+Set `QLOO_API_KEY` and `QLOO_API_BASE_URL=https://hackathon.api.qloo.com` in the Vercel project environment. For `/app`, also set `NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` (from `npx convex dev` / dashboard). Do not commit `.env.local`.
+
+## Hackathon submit
+
+Copy-paste text for Devpost: [DEVPOST.md](DEVPOST.md). Open-source license: [LICENSE](LICENSE) (MIT).
+
+## Agentic story (short)
+
+Send Hold behaves as a **Qloo-powered gate agent**: search entities, check affiliated sets, refuse send on held/silent, re-check on send, and surface ranked in-set alternatives—without Qloo there is no hold decision.

@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Plan } from "../app/plans";
 import { evaluatePlan, ROLE_ENTITY_TYPE } from "./plan-evaluation";
-import * as qloo from "./qloo/client";
+import * as qloo from "./qloo/core";
 
-vi.mock("./qloo/client", async (importOriginal) => {
+vi.mock("./qloo/core", async (importOriginal) => {
   const actual = await importOriginal<typeof qloo>();
   return {
     ...actual,
-    isQlooConfigured: vi.fn(() => true),
-    searchEntity: vi.fn(),
-    checkEntityInAffiliatedSet: vi.fn(),
-    suggestAffiliatedEntity: vi.fn(),
+    isQlooConfiguredFromConfig: vi.fn(() => true),
+    searchEntityCore: vi.fn(),
+    checkEntityInAffiliatedSetCore: vi.fn(),
+    suggestAffiliatedEntityCore: vi.fn(),
   };
 });
 
@@ -55,7 +55,7 @@ const silentPlan: Plan = {
 };
 
 function mockSearch(ids: Record<string, string>) {
-  vi.mocked(qloo.searchEntity).mockImplementation(async (query, entityType) => {
+  vi.mocked(qloo.searchEntityCore).mockImplementation(async (_config, query, entityType) => {
     const key = `${query}:${entityType}`;
     const entityId = ids[key];
     if (!entityId) {
@@ -69,8 +69,8 @@ function mockSearch(ids: Record<string, string>) {
 }
 
 function mockAffinity(inSetById: Record<string, boolean>) {
-  vi.mocked(qloo.checkEntityInAffiliatedSet).mockImplementation(
-    async (_headlinerId, candidateId) => ({
+  vi.mocked(qloo.checkEntityInAffiliatedSetCore).mockImplementation(
+    async (_config, _headlinerId, candidateId) => ({
       ok: true,
       data: { inSet: inSetById[candidateId] ?? false },
     }),
@@ -79,8 +79,8 @@ function mockAffinity(inSetById: Record<string, boolean>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(qloo.isQlooConfigured).mockReturnValue(true);
-  vi.mocked(qloo.suggestAffiliatedEntity).mockResolvedValue({
+  vi.mocked(qloo.isQlooConfiguredFromConfig).mockReturnValue(true);
+  vi.mocked(qloo.suggestAffiliatedEntityCore).mockResolvedValue({
     ok: false,
     reason: "not_found",
   });
@@ -119,7 +119,7 @@ describe("evaluatePlan", () => {
       "dinner-1": false,
       "drink-1": true,
     });
-    vi.mocked(qloo.suggestAffiliatedEntity).mockResolvedValue({
+    vi.mocked(qloo.suggestAffiliatedEntityCore).mockResolvedValue({
       ok: true,
       data: { entity_id: "alt-dinner", name: "Qloo Alt Place" },
     });
@@ -141,7 +141,7 @@ describe("evaluatePlan", () => {
   });
 
   it("returns silent with reason when headliner does not resolve", async () => {
-    vi.mocked(qloo.searchEntity).mockResolvedValueOnce({
+    vi.mocked(qloo.searchEntityCore).mockResolvedValueOnce({
       ok: false,
       reason: "not_found",
     });
@@ -150,6 +150,59 @@ describe("evaluatePlan", () => {
 
     expect(result.status).toBe("silent");
     expect(result.trace.some((step) => step.reason === "not_found")).toBe(true);
+  });
+
+  it("skips headliner search when headlinerEntityId is set", async () => {
+    mockAffinity({
+      "support-picked": true,
+      "dinner-picked": true,
+      "drink-picked": true,
+    });
+
+    const plan: Plan = {
+      ...clearedPlan,
+      headlinerEntityId: "headliner-picked",
+      lines: [
+        { role: "Support", name: "Carly Rae Jepsen", entityId: "support-picked" },
+        { role: "Dinner", name: "Park Güell", entityId: "dinner-picked" },
+        { role: "Drink", name: "Keds", entityId: "drink-picked" },
+      ],
+    };
+
+    const result = await evaluatePlan(plan);
+
+    expect(result.status).toBe("cleared");
+    expect(qloo.searchEntityCore).not.toHaveBeenCalled();
+  });
+
+  it("skips search when line entityId is set", async () => {
+    mockSearch({
+      "Taylor Swift:urn:entity:artist": "headliner-1",
+    });
+    mockAffinity({
+      "support-picked": true,
+      "dinner-picked": true,
+      "drink-picked": true,
+    });
+
+    const plan: Plan = {
+      ...clearedPlan,
+      lines: [
+        { role: "Support", name: "Carly Rae Jepsen", entityId: "support-picked" },
+        { role: "Dinner", name: "Park Güell", entityId: "dinner-picked" },
+        { role: "Drink", name: "Keds", entityId: "drink-picked" },
+      ],
+    };
+
+    const result = await evaluatePlan(plan);
+
+    expect(result.status).toBe("cleared");
+    expect(qloo.searchEntityCore).toHaveBeenCalledTimes(1);
+    expect(qloo.searchEntityCore).toHaveBeenCalledWith(
+      expect.anything(),
+      "Taylor Swift",
+      ROLE_ENTITY_TYPE.Support,
+    );
   });
 
   it("searches Drink lines as urn:entity:brand (no type override)", async () => {
@@ -180,7 +233,8 @@ describe("evaluatePlan", () => {
 
     await evaluatePlan(canal);
 
-    expect(qloo.searchEntity).toHaveBeenCalledWith(
+    expect(qloo.searchEntityCore).toHaveBeenCalledWith(
+      expect.anything(),
       "Mammee Noodle Snack",
       ROLE_ENTITY_TYPE.Drink,
     );

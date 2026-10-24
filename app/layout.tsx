@@ -1,5 +1,7 @@
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata } from "next";
 import { PT_Serif, Source_Sans_3 } from "next/font/google";
+import { ConvexClientProvider } from "./ConvexClientProvider";
 import "./globals.css";
 
 const serif = PT_Serif({
@@ -21,10 +23,14 @@ export const metadata: Metadata = {
     "A night plan does not send when the confident line is missing from the headliner's affiliated set.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ConvexAuthNextjsServerProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
+        </ConvexAuthNextjsServerProvider>
+      </body>
     </html>
   );
 }

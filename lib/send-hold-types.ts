@@ -1,4 +1,6 @@
-import type { PlanLine, SheetStatus } from "../app/plans";
+import type { PlanLine, SheetStatus } from "./plan-types";
+
+export type { SheetStatus };
 
 export type TraceStep = {
   id: string;
@@ -12,6 +14,7 @@ export type LineVerdict = {
   inSet: boolean;
   held?: boolean;
   replacement?: string;
+  replacementEntityId?: string;
 };
 
 export type PlanEvaluation = {

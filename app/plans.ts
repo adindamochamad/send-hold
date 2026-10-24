@@ -1,22 +1,7 @@
-export type PlanLine = {
-  role: "Support" | "Dinner" | "Drink";
-  name: string;
-  /** Fixture only: marks which line is held when QLOO_API_KEY is unset. */
-  held?: boolean;
-};
+import type { EvaluatablePlan, PlanLine, SheetStatus } from "../lib/plan-types";
 
-export type Plan = {
-  id: string;
-  label: string;
-  day: string;
-  city: string;
-  headliner: string;
-  lines: PlanLine[];
-  /** Fixture only: Qloo does not answer for this folio. */
-  silent?: boolean;
-  /** Shown when live evaluation is silent (negative-control folio). */
-  negativeControlNote?: string;
-};
+export type { PlanLine, SheetStatus };
+export type Plan = EvaluatablePlan;
 
 export const plans: Plan[] = [
   {
@@ -71,5 +56,3 @@ export const plans: Plan[] = [
     ],
   },
 ];
-
-export type SheetStatus = "held" | "silent" | "cleared";
