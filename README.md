@@ -55,7 +55,7 @@ Set on the **Convex** deployment (`npx convex env set` for dev, `--prod` for pro
 |----------|---------|
 | `QLOO_API_KEY`, `QLOO_API_BASE_URL` | Live evaluate from Convex actions |
 | `JWT_PRIVATE_KEY`, `JWKS` | Convex Auth (password sign-up). Generate: `npx @convex-dev/auth` |
-| `SITE_URL` | App origin for auth (e.g. `http://localhost:3000` dev, `https://send-hold.vercel.app` prod) |
+| `SITE_URL` | **Next.js app origin** for Convex Auth (not the `.convex.site` URL): `http://localhost:3000` dev, `https://send-hold.vercel.app` prod |
 | `RESEND_API_KEY`, `SEND_HOLD_FROM_EMAIL` | Optional email when a cleared plan sends |
 
 Do not commit secret values. Names only in [`.env.example`](.env.example) for Next.js public Convex URLs.
@@ -88,6 +88,7 @@ Set `QLOO_API_KEY` and `QLOO_API_BASE_URL=https://hackathon.api.qloo.com` in the
 
 - `NEXT_PUBLIC_CONVEX_URL=https://impartial-elk-202.convex.cloud`
 - `NEXT_PUBLIC_CONVEX_SITE_URL=https://impartial-elk-202.convex.site`
+- `CONVEX_SITE_URL=https://impartial-elk-202.convex.site` (same value; required for `@convex-dev/auth` on the Next.js server)
 
 Set `QLOO_*`, `RESEND_API_KEY`, and `SEND_HOLD_FROM_EMAIL` on the Convex production deployment (`npx convex env set --prod`). Do not commit `.env.local`.
 

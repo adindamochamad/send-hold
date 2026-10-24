@@ -67,7 +67,7 @@ export async function sendPlanAction(planId: string): Promise<SendResult> {
 
   return {
     ok: true,
-    message: `Sent: ${plan.headliner} · ${plan.city}`,
+    message: `Logged: ${plan.headliner} · ${plan.city}`,
     evaluation,
     log,
   };

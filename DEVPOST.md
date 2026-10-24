@@ -14,7 +14,7 @@ A night plan does not send until every line is in the headliner’s Qloo affilia
 
 **https://send-hold.vercel.app/** — Track A hackathon demo only. No login. Four folios, live Qloo when the host has `QLOO_API_KEY`.
 
-Do **not** describe `/app` as part of the demo URL unless you have verified `https://send-hold.vercel.app/app/sign-in` returns 200 (not 404).
+Do **not** describe `/app` as part of the demo URL unless sign-up works on production (a 200 on `/app/sign-in` is not enough — create a test account first).
 
 ## Repository
 
@@ -57,4 +57,4 @@ MIT — see `LICENSE` in the repository root.
 - [ ] Demo URL loads `/` without login  
 - [ ] Repo public with LICENSE visible in GitHub About  
 - [ ] Description pasted on Devpost (pipeline wording, not “LLM agent”)  
-- [ ] If `/app` is live: verify sign-in and health first; otherwise omit `/app` from the pitch  
+- [ ] If `/app` is live: verify **sign-up** (not just sign-in page 200) and `/api/health`; otherwise omit `/app` from the pitch  
