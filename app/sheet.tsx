@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { plans, type Plan, type SheetStatus } from "./plans";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { agentRequestPayloadForPlan } from "../lib/agent-request";
+import { buildEvaluateCurl } from "../lib/agent-curl";
 import type {
   LineVerdict,
   PlanEvaluation,
@@ -9,6 +10,7 @@ import type {
   TraceStep,
 } from "../lib/send-hold-types";
 import { evaluatePlanAction, sendPlanAction } from "./actions/send-hold";
+import { plans, type Plan, type SheetStatus } from "./plans";
 import styles from "./sheet.module.css";
 
 type SheetProps = {
@@ -81,6 +83,24 @@ export function Sheet({ qlooLive }: SheetProps) {
     { id: "search", label: `search · ${plan.headliner}` },
   ];
 
+  const agentRequest = useMemo(() => agentRequestPayloadForPlan(plan), [plan]);
+  const [agentCurl, setAgentCurl] = useState("");
+  useEffect(() => {
+    setAgentCurl(buildEvaluateCurl(window.location.origin, agentRequest));
+  }, [agentRequest]);
+  const agentResponse = useMemo(() => {
+    if (!evaluation) {
+      return null;
+    }
+    return {
+      ok: true,
+      planId: plan.id,
+      headliner: plan.headliner,
+      city: plan.city,
+      evaluation,
+    };
+  }, [evaluation, plan.city, plan.headliner, plan.id]);
+
   return (
     <div className={styles.page}>
       <header className={styles.masthead}>
@@ -136,10 +156,17 @@ export function Sheet({ qlooLive }: SheetProps) {
         ) : null}
 
         <footer className={styles.actionsRow}>
-          <details className={styles.audit} open>
-            <summary className={styles.auditSummary}>Qloo trace</summary>
-            <TraceList steps={trace} />
-          </details>
+          <div className={styles.auditColumn}>
+            <details className={styles.audit} open>
+              <summary className={styles.auditSummary}>Qloo trace</summary>
+              <TraceList steps={trace} />
+            </details>
+            <AgentToolPanel
+              request={agentRequest}
+              response={agentResponse}
+              curl={agentCurl}
+            />
+          </div>
           <Control
             sendAllowed={sendAllowed}
             status={status}
@@ -198,7 +225,7 @@ function Register({
   return (
     <div className={styles.register}>
       <section className={styles.panel} aria-labelledby="draft-heading">
-        <h2 id="draft-heading" className={styles.panelTitle}>Would have sent</h2>
+        <h2 id="draft-heading" className={styles.panelTitle}>Generic agent would send</h2>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -347,5 +374,34 @@ function TraceList({ steps }: { steps: TraceStep[] }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+function AgentToolPanel({
+  request,
+  response,
+  curl,
+}: {
+  request: ReturnType<typeof agentRequestPayloadForPlan>;
+  response: Record<string, unknown> | null;
+  curl: string;
+}) {
+  return (
+    <details className={styles.audit}>
+      <summary className={styles.auditSummary}>Agent tool</summary>
+      <p className={styles.agentLead}>
+        Agents call <code className={styles.inlineCode}>POST /api/agent/evaluate</code> and{" "}
+        <code className={styles.inlineCode}>POST /api/agent/send</code>. Tool descriptors:{" "}
+        <a href="/api/agent" className={styles.agentLink}>GET /api/agent</a>.
+      </p>
+      <p className={styles.agentLabel}>Request</p>
+      <pre className={styles.agentCode}>{JSON.stringify(request, null, 2)}</pre>
+      <p className={styles.agentLabel}>Response (evaluate)</p>
+      <pre className={styles.agentCode}>
+        {response ? JSON.stringify(response, null, 2) : "Evaluating…"}
+      </pre>
+      <p className={styles.agentLabel}>curl</p>
+      <pre className={styles.agentCode}>{curl || "—"}</pre>
+    </details>
   );
 }

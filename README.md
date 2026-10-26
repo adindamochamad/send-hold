@@ -98,4 +98,14 @@ Copy-paste text for Devpost: [DEVPOST.md](DEVPOST.md). Open-source license: [LIC
 
 ## Qloo story (short)
 
-Send Hold is a **Qloo-gated send pipeline**: search entities, check affiliated sets, refuse send on held/silent, re-check on send, and surface ranked in-set alternatives. Without Qloo there is no hold decision. It is not an LLM agent; see [DEVPOST.md](DEVPOST.md) for hackathon copy.
+Send Hold is an **agentic send-gate tool**: agents (or night-of talent ops) call `POST /api/agent/evaluate` and `POST /api/agent/send`. Qloo `/search` and `/v2/insights` decide held, silent, or cleared; send is blocked unless every line is in the headliner’s affiliated set. The demo contrasts **Generic agent would send** with Qloo’s hold result. Tool descriptors: `GET /api/agent`. See [DEVPOST.md](DEVPOST.md) for hackathon copy.
+
+## Agent API (Track A)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/agent` | Tool descriptors + curl examples (`Accept: text/html` for a simple page) |
+| `POST` | `/api/agent/evaluate` | `{ "planId": "north-wharf" }` or `{ headliner, city?, lines[3] }` |
+| `POST` | `/api/agent/send` | Same body; re-evaluates; 409 on held/silent |
+
+Demo folio ids: `north-wharf`, `canal`, `late`, `open-door`.
